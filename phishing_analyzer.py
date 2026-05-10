@@ -1,15 +1,15 @@
-import anthropic
 import streamlit as st
 import requests
 import re
-import json
 import os
+from groq import Groq
 
-# API keys from environment variables
-ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY")
+# API keys
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
 VIRUSTOTAL_API_KEY = os.environ.get("VIRUSTOTAL_API_KEY")
 
-client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+# Configure Groq
+client = Groq(api_key=GROQ_API_KEY)
 
 def extract_urls(text):
     pattern = r'https?://[^\s]+'
@@ -102,33 +102,35 @@ if st.button("Analyze Email", type="primary"):
                     malicious, suspicious, reputation = check_domain_virustotal(domain)
                     domain_results[domain] = (malicious, suspicious, reputation)
 
-        # Claude analysis
-        with st.spinner("Analyzing email with Claude AI..."):
+        # Groq analysis
+        with st.spinner("Analyzing email with AI..."):
             url_summary = ""
             if url_results:
                 url_summary = "\n\nVirusTotal URL Scan Results:\n"
                 for url, (mal, sus) in url_results.items():
                     url_summary += f"- {url}: {mal} malicious, {sus} suspicious detections\n"
 
-            message = client.messages.create(
-                model="claude-sonnet-4-6",
-                max_tokens=1024,
-                system="You are a cybersecurity expert specializing in phishing detection.",
+            response = client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
                 messages=[
-                    {"role": "user", "content": f"Analyze this email for phishing and give me: 1) VERDICT, 2) CONFIDENCE, 3) RED FLAGS, 4) EXPLANATION, 5) RECOMMENDED ACTION:\n\n{email_text}{url_summary}"}
+                    {"role": "system", "content": "You are a cybersecurity expert specializing in phishing detection."},
+                    {"role": "user", "content": f"Analyze this email and give me: 1) VERDICT, 2) CONFIDENCE, 3) RED FLAGS, 4) EXPLANATION, 5) RECOMMENDED ACTION:\n\n{email_text}{url_summary}"}
                 ]
             )
+            analysis = response.choices[0].message.content
 
-            # Get confidence score separately
-            score_message = client.messages.create(
-                model="claude-sonnet-4-6",
-                max_tokens=100,
-                system="You are a cybersecurity expert. Respond only with a single integer between 0 and 100 representing the phishing risk score. 0 = definitely safe, 100 = definitely phishing. No other text.",
+            # Get confidence score
+            score_response = client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
                 messages=[
+                    {"role": "system", "content": "You are a cybersecurity expert. Respond only with a single integer between 0 and 100 representing the phishing risk score. 0 = definitely safe, 100 = definitely phishing. No other text."},
                     {"role": "user", "content": f"What is the phishing risk score for this email?\n\n{email_text}{url_summary}"}
                 ]
             )
-            confidence_score = int(score_message.content[0].text.strip())
+            try:
+                confidence_score = int(score_response.choices[0].message.content.strip())
+            except:
+                confidence_score = 50
 
         # Display confidence meter
         st.subheader("🎯 Phishing Risk Score")
@@ -164,6 +166,6 @@ if st.button("Analyze Email", type="primary"):
                 else:
                     st.success(f"✅ {domain} — No threats detected, reputation score: {rep}")
 
-        # Display Claude analysis
+        # Display analysis
         st.subheader("🤖 AI Analysis")
-        st.markdown(message.content[0].text)
+        st.markdown(analysis)
