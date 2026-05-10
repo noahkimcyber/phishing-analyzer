@@ -6,7 +6,7 @@ A free, AI-powered web tool that analyzes suspicious emails for phishing threats
 
 
 
-🔗 \*\*Live App:\*\* \[Click here to use the tool](https://noahkimcyber-phishing-analyzer.streamlit.app)
+🔗 \*\*Live App:\*\* \[Click here to use the tool](https://phishing-analyzer-nk.streamlit.app/)
 
 
 
