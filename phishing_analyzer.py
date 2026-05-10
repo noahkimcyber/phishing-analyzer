@@ -76,6 +76,14 @@ with st.expander("📧 How to properly copy an email from Gmail for best results
 
     **For basic analysis:**
     Simply select and copy the visible email text and paste it below. Good enough for most cases.
+
+    **On mobile?**
+    The Gmail app does not support "Show Original". For best results on mobile:
+    1. Open Gmail in your mobile browser (Chrome or Safari)
+    2. Tap the three dots in the browser menu and select **"Desktop site"**
+    3. Find your email and follow the "Show Original" steps above
+    
+    Alternatively, forward the suspicious email to yourself and analyze it on a desktop computer.
     """)
 
 email_text = st.text_area("Paste email here:", height=250, placeholder="Paste the full email content here...")
